@@ -11,6 +11,8 @@ def square(x):
 def velPlan(dist, v_start, v_end, v_max, acc_max, vel_list):
     dt = 0.02
     # 计算边界
+    is_triangle = False
+    is_linear = False
     vel_limit = 0.0
     vel_temp = 0.0
     vel_temp = math.sqrt((dist * 2 * acc_max + square(v_start) + square(v_end)) / 2.0)
@@ -20,8 +22,11 @@ def velPlan(dist, v_start, v_end, v_max, acc_max, vel_list):
     print("dec dist is %f" % ((square(vel_temp) - square(v_end))/(2*acc_max)))
     if vel_temp < v_max:
         vel_limit = vel_temp
+        is_triangle = True
     else:
         vel_limit = v_max
+    if is_triangle and math.fabs(vel_limit) <= math.fabs(v_end):
+        is_linear = True
     # 分段时间及距离
     acc_t = (vel_limit - v_start) / acc_max
     print(acc_t)
@@ -35,33 +40,73 @@ def velPlan(dist, v_start, v_end, v_max, acc_max, vel_list):
     # print(constant_dist)
     constant_t = constant_dist / vel_limit
     print(constant_t)
-    # 细分速度
-    tmp_t = 0
-    tmp_v = v_start
-    vel_list.append(v_start)
-    tmp_t = tmp_t + dt
-    while acc_t - tmp_t > 0:
-        tmp_v = tmp_v + acc_max * dt
-        if tmp_v <= vel_limit:
+    print("is_triangle is %d, is_linear is %d" % (is_triangle, is_linear))
+    if is_triangle:
+        if not is_linear:
+            tmp_t = 0
+            tmp_v = v_start
+            vel_list.append(v_start)
+            tmp_t = tmp_t + dt
+            while acc_t > tmp_t:
+                tmp_v = tmp_v + acc_max * dt
+                # if tmp_v <= vel_limit:
+                vel_list.append(tmp_v)
+                tmp_t = tmp_t + dt
+                # print(tmp_t)
+            if (acc_t - tmp_t - dt) > 0:
+                vel_list.append(vel_limit)
+            tmp_t = 0
+            tmp_v = vel_limit
+            while dec_t > tmp_t:
+                tmp_v = tmp_v - acc_max * dt
+                vel_list.append(tmp_v)
+                tmp_t = tmp_t + dt
+            if (dec_t - tmp_t - dt) > 0:
+                vel_list.append(v_end)
+        else:
+            linear_acc = (square(v_end) - square(v_start)) / (2 * dist)
+            print("linear_acc is %f" % linear_acc)
+            linear_acc_t = math.fabs(v_end - v_start) / math.fabs(linear_acc)
+            tmp_t = 0
+            tmp_v = v_start
+            vel_list.append(v_start)
+            tmp_t = tmp_t + dt
+            while linear_acc_t - tmp_t > 0:
+                tmp_v = tmp_v + linear_acc * dt
+                # if tmp_v <= vel_limit:
+                vel_list.append(tmp_v)
+                # print(tmp_v)
+                tmp_t = tmp_t + dt
+                # print(tmp_t)
+            if (linear_acc_t - tmp_t - dt) > 0:
+                vel_list.append(v_end)
+    else:
+        tmp_t = 0
+        tmp_v = v_start
+        vel_list.append(v_start)
+        tmp_t = tmp_t + dt
+        while acc_t - tmp_t > 0:
+            tmp_v = tmp_v + acc_max * dt
+            # if tmp_v <= vel_limit:
             vel_list.append(tmp_v)
-        tmp_t = tmp_t + dt
-        print(tmp_t)
-    if (acc_t - tmp_t - dt) > 0:
-        vel_list.append(vel_limit)
-    tmp_t = 0
-    while constant_t - tmp_t > 0:
-        vel_list.append(vel_limit)
-        tmp_t = tmp_t + dt
-    if (constant_t - tmp_t - dt) > 0:
-        vel_list.append(vel_limit)
-    tmp_t = 0
-    tmp_v = vel_limit
-    while dec_t - tmp_t > 0:
-        tmp_v = tmp_v - acc_max * dt
-        vel_list.append(tmp_v)
-        tmp_t = tmp_t + dt
-    if (dec_t - tmp_t - dt) > 0:
-        vel_list.append(v_end)
+            tmp_t = tmp_t + dt
+            # print(tmp_t)
+        if (acc_t - tmp_t - dt) > 0:
+            vel_list.append(vel_limit)
+        tmp_t = 0
+        while constant_t - tmp_t > 0:
+            vel_list.append(vel_limit)
+            tmp_t = tmp_t + dt
+        if (constant_t - tmp_t - dt) > 0:
+            vel_list.append(vel_limit)
+        tmp_t = 0
+        tmp_v = vel_limit
+        while dec_t - tmp_t > 0:
+            tmp_v = tmp_v - acc_max * dt
+            vel_list.append(tmp_v)
+            tmp_t = tmp_t + dt
+        if (dec_t - tmp_t - dt) > 0:
+            vel_list.append(v_end)
 
 # data_str = open("D:\\code\\Scrolling_Ploter\\2-4.txt","r+")
 # data_array = []
@@ -79,6 +124,11 @@ p.showGrid(x=True,y=True)
 vel = []
 velPlan(4, 0.02, 3, 5, 1, vel)
 curve = p.plot(y = vel, pen="y", symbolBrush=(255,0,0), symbolPen='w')
+vel = []
+velPlan(8, 2, 3, 5, 2, vel)
+p1 = win.addPlot()
+p1.showGrid(x=True,y=True)
+curve1 = p1.plot(y = vel, pen="y", symbolBrush=(255,0,0), symbolPen='w')
 
 if __name__ == '__main__':
     import sys
